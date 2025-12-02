@@ -161,12 +161,10 @@ setInterval(() => {
 
 // ====== CHAMAR CLIENTE ======
 async function chamar(barber, index) {
-  const avgLocal = parseInt(document.getElementById('avgGlobal').value) || 45;
-
   const res = await fetch('/api/call', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ barber, index, avg: avgLocal })
+    body: JSON.stringify({ barber, index })
   });
 
   const data = await res.json();
@@ -186,6 +184,7 @@ async function chamar(barber, index) {
     alert('Erro ao chamar cliente');
   }
 }
+
 
 // ====== REMOVER ======
 async function remover(barber,index){
