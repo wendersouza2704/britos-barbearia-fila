@@ -20,13 +20,14 @@ small{color:#bbb}
 <h2>Entrar na Fila – Britos Barbearia</h2>
 <input id="nome" placeholder="Seu nome" autocomplete="name">
 <input id="telefone" placeholder="WhatsApp (ex: 11999999999)" inputmode="numeric">
+<label for="barbeiro"><small>Barbeiro</small></label>
 <select id="barbeiro">
-  <option value="qualquer">Qualquer barbearia</option>
-  <option value="joao">Barbeiro João</option>
-  <option value="marcos">Barbeiro Marcos</option>
+  <option value="breno">Breno</option>
 </select>
-<label><small>Tempo médio por atendimento (min)</small></label>
-<input id="avg" type="number" value="15">
+
+<!-- tempo fixo, não mostrado ao cliente -->
+<p class="note">Tempo estimado por cliente: <strong>45 minutos</strong></p>
+
 <button id="entrar">Entrar na Fila</button>
 <p id="msg" class="note"></p>
 </div>
@@ -36,11 +37,13 @@ document.getElementById('entrar').addEventListener('click', async ()=>{
     const nome = document.getElementById('nome').value.trim();
     const telefone = document.getElementById('telefone').value.trim();
     const barber = document.getElementById('barbeiro').value;
-    const avg = parseInt(document.getElementById('avg').value) || 15;
+    const FIX_MIN = 45; // tempo fixo em minutos
+
     if(!nome || !telefone){ alert('Preencha nome e telefone'); return; }
+
     const res = await fetch('/api/fila', {
         method:'POST', headers:{'content-type':'application/json'},
-        body: JSON.stringify({nome, telefone, barber, avg})
+        body: JSON.stringify({ nome, telefone, barber, avg: FIX_MIN })
     });
     const data = await res.json();
     if(data.ok){
