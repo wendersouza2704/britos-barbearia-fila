@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Fila - Britos Barbearia</title>
+<style>
+body { font-family: Arial; margin: 30px; }
+input, button { padding: 10px; width: 100%; margin-top: 10px; font-size: 16px; }
+.container { max-width: 400px; margin: auto; }
+</style>
+</head>
+<body>
+<div class="container">
+<h2>Entrar na Fila – Britos Barbearia</h2>
+
+<input id="nome" placeholder="Seu nome">
+<input id="telefone" placeholder="WhatsApp (ex: 11999999999)">
+
+<button onclick="entrarFila()">Entrar na Fila</button>
+
+<p id="msg"></p>
+</div>
+
+<script>
+function entrarFila() {
+    const nome = document.getElementById("nome").value;
+    const telefone = document.getElementById("telefone").value;
+
+    if (!nome || !telefone) {
+        alert("Preencha todos os campos");
+        return;
+    }
+
+    fetch("/api/fila", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nome, telefone })
+    })
+    .then(r => r.json())
+    .then(data => {
+        document.getElementById("msg").innerHTML =
+            "Você entrou na fila! Pessoas na sua frente: " + data.posicao;
+    });
+}
+</script>
+</body>
+</html>

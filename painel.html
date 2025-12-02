@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Painel da Fila – Britos Barbearia</title>
+<style>
+body { font-family: Arial; margin: 20px; }
+table { width: 100%; border-collapse: collapse; }
+td, th { border: 1px solid #ccc; padding: 10px; }
+button { padding: 8px; margin: 3px; }
+</style>
+</head>
+<body>
+<h2>Painel de Controle – Britos Barbearia</h2>
+
+<button onclick="carregar()">Recarregar Lista</button>
+
+<table>
+<thead>
+<tr><th>Nome</th><th>Telefone</th><th>Ações</th></tr>
+</thead>
+<tbody id="lista"></tbody>
+</table>
+
+<script>
+function carregar() {
+    fetch("/api/fila")
+        .then(r => r.json())
+        .then(fila => {
+            const tbody = document.getElementById("lista");
+            tbody.innerHTML = "";
+
+            fila.forEach((c, i) => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${c.nome}</td>
+                        <td>${c.telefone}</td>
+                        <td>
+                            <button onclick="chamar('${c.telefone}', '${c.nome}')">Chamar</button>
+                            <button onclick="remover(${i})">Atender / Remover</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        });
+}
+
+function chamar(tel, nome) {
+    const msg = encodeURIComponent(`Olá ${nome}! Sua vez está chegando na Britos Barbearia.`);
+    window.open(`https://wa.me/55${tel}?text=${msg}`);
+}
+
+function remover(i) {
+    fetch("/api/fila?index=" + i, { method: "DELETE" })
+        .then(() => carregar());
+}
+
+carregar();
+</script>
+</body>
+</html>
