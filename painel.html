@@ -85,15 +85,35 @@ async function carregar(){
   document.getElementById('nofila').textContent = br.length;
 }
 
-function renderItem(c,barber,i){
-  return `<div class="customer">
-    <div><b>${c.nome}</b> <span class="small">(${c.telefone})</span></div>
-    <div class="small">Entrou: ${new Date(c.ts).toLocaleTimeString()}</div>
-    <div style="margin-top:8px">
-      <button class="callbtn" onclick="chamar('${barber}',${i})">Chamar</button>
-      <button class="removebtn" onclick="remover('${barber}',${i})">Remover</button>
+function renderItem(c, barber, i) {
+  const FIX_MIN = 45;
+
+  // tempo de espera correto
+  const esperaMin = (i + 1) * FIX_MIN;
+
+  // horário previsto baseado no tempo de espera acumulado
+  const previsto = new Date(Date.now() + esperaMin * 60000)
+    .toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  return `
+    <div class="customer">
+      <div><b>${c.nome}</b> <span class="small">(${c.telefone})</span></div>
+
+      <div class="small">Entrou: ${new Date(c.ts).toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit'
+      })}</div>
+
+      <div class="small">Espera: ${esperaMin} min</div>
+
+      <div class="small">Previsto: ${previsto}</div>
+
+      <div style="margin-top:8px">
+        <button class="callbtn" onclick="chamar('${barber}',${i})">Chamar</button>
+        <button class="removebtn" onclick="remover('${barber}',${i})">Remover</button>
+      </div>
     </div>
-  </div>`;
+  `;
 }
 
 async function chamar(barber,index){
