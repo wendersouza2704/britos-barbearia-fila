@@ -6,29 +6,26 @@ let state = global.state || {
 global.state = state;
 
 export default function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(400).json({ ok: false });
+  if (req.method !== "POST") {
+    return res.status(400).json({ ok: false, erro: "Método inválido" });
   }
 
   const { barber, index } = req.body;
 
-  if (barber !== "breno") {
-    return res.status(400).json({ ok: false });
+  if (!state.queues[barber]) {
+    return res.status(400).json({ ok: false, erro: "Fila inexistente" });
   }
 
-  const cliente = state.queues.breno[index];
+  const cliente = state.queues[barber][index];
 
   if (!cliente) {
-    return res.status(200).json({ ok: false });
+    return res.status(400).json({ ok: false, erro: "Cliente não encontrado" });
   }
 
-  // Remove da fila
-  state.queues.breno.splice(index, 1);
-
-  // Conta como atendido
+  // remover da fila
+  state.queues[barber].splice(index, 1);
   state.stats.atendidos++;
 
-  // Retorna cliente para o painel enviar WhatsApp
   return res.status(200).json({
     ok: true,
     cliente
