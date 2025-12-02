@@ -160,19 +160,28 @@ setInterval(() => {
 }, 30000); // verifica a cada 30 segundos
 
 // ====== CHAMAR CLIENTE ======
-async function chamar(barber,index){
+async function chamar(barber, index) {
   const avgLocal = parseInt(document.getElementById('avgGlobal').value) || 45;
+
   const res = await fetch('/api/call', {
-    method:'POST', headers:{'content-type':'application/json'},
-    body: JSON.stringify({barber,index,avg:avgLocal})
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ barber, index, avg: avgLocal })
   });
+
   const data = await res.json();
-  if(data && data.cliente){
+
+  if (data && data.cliente) {
     playSound();
+
     const tel = data.cliente.telefone;
-    const msg = encodeURIComponent(`Olá ${data.cliente.nome}, sua vez está chegando na Britos Barbearia. Venha agora, por favor.`);
-    window.open(`https://wa.me/55${tel}?text=${msg}`,'_blank');
-    setTimeout(()=>carregar(),500);
+    const msg = encodeURIComponent(
+      `Olá ${data.cliente.nome}, sua vez chegou na Britos Barbearia. Pode vir agora!`
+    );
+
+    window.open(`https://wa.me/55${tel}?text=${msg}`, '_blank');
+
+    setTimeout(() => carregar(), 500);
   } else {
     alert('Erro ao chamar cliente');
   }
