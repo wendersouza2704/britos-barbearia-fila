@@ -25,6 +25,7 @@ input,select{padding:8px;border-radius:6px;border:1px solid #222;background:#0b0
 </style>
 </head>
 <body>
+
 <div class="header">
 <img src="/images/logo.png" class="logo" alt="logo">
 <div class="title">Painel de Controle – Britos Barbearia</div>
@@ -46,6 +47,7 @@ input,select{padding:8px;border-radius:6px;border:1px solid #222;background:#0b0
 <label class="small">Tempo médio (min)</label>
 <input id="avgGlobal" type="number" value="45" style="width:80px">
 </div>
+
 <div style="margin-left:auto" class="stats">
 Atendidos hoje: <span id="atendidos">0</span> • Na fila: <span id="nofila">0</span>
 </div>
@@ -64,7 +66,7 @@ Atendidos hoje: <span id="atendidos">0</span> • Na fila: <span id="nofila">0</
 </audio>
 
 <script>
-// simple auth
+// ====== LOGIN ======
 document.getElementById('btnLogin').onclick = ()=>{
   const u = document.getElementById('user').value;
   const p = document.getElementById('pass').value;
@@ -75,23 +77,32 @@ document.getElementById('btnLogin').onclick = ()=>{
   } else alert('Credenciais incorretas');
 };
 
-// helper to render
+// ====== CARREGAR FILA ======
 async function carregar(){
   const r = await fetch('/api/fila');
   const data = await r.json();
   const br = data.queues.breno || [];
-  document.getElementById('col-breno').innerHTML = br.map((c,i)=>renderItem(c,'breno',i)).join('');
+
+  // adiciona flags se não existirem
+  br.forEach(c => {
+    if (c.notificado10 === undefined) c.notificado10 = false;
+    if (c.notificado5 === undefined) c.notificado5 = false;
+  });
+
+  document.getElementById('col-breno').innerHTML =
+    br.map((c,i)=>renderItem(c,'breno',i)).join('');
+
   document.getElementById('atendidos').textContent = data.stats.atendidos || 0;
   document.getElementById('nofila').textContent = br.length;
+
+  filaCache = br; // salva localmente para notificações
 }
 
+// ====== RENDER ITEM ======
 function renderItem(c, barber, i) {
   const FIX_MIN = 45;
-
-  // tempo de espera correto
   const esperaMin = (i + 1) * FIX_MIN;
 
-  // horário previsto baseado no tempo de espera acumulado
   const previsto = new Date(Date.now() + esperaMin * 60000)
     .toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
@@ -100,12 +111,10 @@ function renderItem(c, barber, i) {
       <div><b>${c.nome}</b> <span class="small">(${c.telefone})</span></div>
 
       <div class="small">Entrou: ${new Date(c.ts).toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit'
+        hour:'2-digit', minute:'2-digit'
       })}</div>
 
       <div class="small">Espera: ${esperaMin} min</div>
-
       <div class="small">Previsto: ${previsto}</div>
 
       <div style="margin-top:8px">
@@ -116,6 +125,41 @@ function renderItem(c, barber, i) {
   `;
 }
 
+// ====== FUNÇÃO PARA ENVIAR WHATSAPP ======
+function enviarWhatsApp(tel, msg) {
+  window.open(`https://wa.me/55${tel}?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+// ====== NOTIFICAÇÃO AUTOMÁTICA 10 E 5 MIN ======
+let filaCache = [];
+
+setInterval(() => {
+  if (!filaCache.length) return;
+
+  const agora = Date.now();
+  const FIX_MIN = 45;
+
+  filaCache.forEach((c, i) => {
+    const esperaMin = (i + 1) * FIX_MIN;
+    const tempoRestante = esperaMin * 60000 - (agora - c.ts);
+
+    // 10 minutos
+    if (tempoRestante <= 600000 && tempoRestante > 540000 && !c.notificado10) {
+      c.notificado10 = true;
+      enviarWhatsApp(c.telefone,
+        `Olá ${c.nome}, falta aproximadamente 10 minutos para sua vez na Britos Barbearia!`);
+    }
+
+    // 5 minutos
+    if (tempoRestante <= 300000 && tempoRestante > 240000 && !c.notificado5) {
+      c.notificado5 = true;
+      enviarWhatsApp(c.telefone,
+        `Olá ${c.nome}, está quase na sua vez! Faltam cerca de 5 minutos.`);
+    }
+  });
+}, 30000); // verifica a cada 30 segundos
+
+// ====== CHAMAR CLIENTE ======
 async function chamar(barber,index){
   const avgLocal = parseInt(document.getElementById('avgGlobal').value) || 45;
   const res = await fetch('/api/call', {
@@ -134,16 +178,18 @@ async function chamar(barber,index){
   }
 }
 
+// ====== REMOVER ======
 async function remover(barber,index){
   await fetch(`/api/fila?barber=${barber}&index=${index}`,{method:'DELETE'});
   carregar();
 }
 
+// ====== CHAMAR PRÓXIMO ======
 async function chamarProximo(){
   await chamar('breno',0);
 }
 
-// simple tone using WebAudio
+// ====== SOM ======
 function playSound(){
   try{
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
