@@ -1,47 +1,54 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<title>Fila - Britos Barbearia</title>
+<meta charset="utf-8">
+<title>Entrar na Fila – Britos Barbearia</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
-body { font-family: Arial; margin: 30px; }
-input, button { padding: 10px; width: 100%; margin-top: 10px; font-size: 16px; }
-.container { max-width: 400px; margin: auto; }
+body { font-family: Arial, Helvetica, sans-serif; background:#111; color:#eee; margin:0; padding:20px; }
+.container { max-width:420px; margin:30px auto; background:#0f0f0f; padding:20px; border-radius:8px; box-shadow:0 4px 18px rgba(0,0,0,0.6);}
+.logo{display:block;margin:0 auto 10px;width:140px}
+h2{margin:6px 0 12px;text-align:center}
+input, select, button { width:100%; padding:10px; margin:8px 0; border-radius:6px; border:1px solid #333; background:#121212; color:#fff; box-sizing:border-box; }
+small{color:#bbb}
+.note{font-size:14px;color:#ccc;margin-top:8px}
 </style>
 </head>
 <body>
 <div class="container">
+<img src="/images/logo.png" class="logo" alt="Britos Barbearia">
 <h2>Entrar na Fila – Britos Barbearia</h2>
-
-<input id="nome" placeholder="Seu nome">
-<input id="telefone" placeholder="WhatsApp (ex: 11999999999)">
-
-<button onclick="entrarFila()">Entrar na Fila</button>
-
-<p id="msg"></p>
+<input id="nome" placeholder="Seu nome" autocomplete="name">
+<input id="telefone" placeholder="WhatsApp (ex: 11999999999)" inputmode="numeric">
+<select id="barbeiro">
+  <option value="qualquer">Qualquer barbearia</option>
+  <option value="joao">Barbeiro João</option>
+  <option value="marcos">Barbeiro Marcos</option>
+</select>
+<label><small>Tempo médio por atendimento (min)</small></label>
+<input id="avg" type="number" value="15">
+<button id="entrar">Entrar na Fila</button>
+<p id="msg" class="note"></p>
 </div>
 
 <script>
-function entrarFila() {
-    const nome = document.getElementById("nome").value;
-    const telefone = document.getElementById("telefone").value;
-
-    if (!nome || !telefone) {
-        alert("Preencha todos os campos");
-        return;
-    }
-
-    fetch("/api/fila", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nome, telefone })
-    })
-    .then(r => r.json())
-    .then(data => {
-        document.getElementById("msg").innerHTML =
-            "Você entrou na fila! Pessoas na sua frente: " + data.posicao;
+document.getElementById('entrar').addEventListener('click', async ()=>{
+    const nome = document.getElementById('nome').value.trim();
+    const telefone = document.getElementById('telefone').value.trim();
+    const barber = document.getElementById('barbeiro').value;
+    const avg = parseInt(document.getElementById('avg').value) || 15;
+    if(!nome || !telefone){ alert('Preencha nome e telefone'); return; }
+    const res = await fetch('/api/fila', {
+        method:'POST', headers:{'content-type':'application/json'},
+        body: JSON.stringify({nome, telefone, barber, avg})
     });
-}
+    const data = await res.json();
+    if(data.ok){
+        document.getElementById('msg').textContent = `Você entrou na fila! Posição: ${data.posicao}. Tempo estimado: ${data.tempo} min.`
+    } else {
+        document.getElementById('msg').textContent = 'Erro ao entrar na fila.'
+    }
+});
 </script>
 </body>
 </html>
