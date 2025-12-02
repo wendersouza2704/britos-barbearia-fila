@@ -22,12 +22,8 @@ export default function handler(req, res) {
     return res.status(400).json({ ok: false, erro: "Cliente não encontrado" });
   }
 
-  // remover da fila
   state.queues[barber].splice(index, 1);
   state.stats.atendidos++;
 
-  return res.status(200).json({
-    ok: true,
-    cliente
-  });
+  return res.status(200).json({ ok: true, cliente });
 }
