@@ -1,29 +1,36 @@
-let state = global.state || {
-  queues: { breno: [] },
-  stats: { atendidos: 0 }
-};
+async function chamar(barber, index) {
+  try {
+    const res = await fetch('/api/call', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        barber: barber,
+        index: index
+      })
+    });
 
-global.state = state;
+    const data = await res.json();
 
-export default function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(400).json({ ok: false, erro: "Método inválido" });
+    if (!res.ok) {
+      console.error("Erro do servidor:", data);
+      alert("Erro ao chamar cliente");
+      return;
+    }
+
+    // sucesso
+    playSound();
+
+    const tel = data.cliente.telefone;
+    const msg = encodeURIComponent(
+      `Olá ${data.cliente.nome}, sua vez chegou na Britos Barbearia. Pode vir agora!`
+    );
+
+    window.open(`https://wa.me/55${tel}?text=${msg}`, '_blank');
+
+    setTimeout(() => carregar(), 500);
+
+  } catch (err) {
+    console.error("Erro na chamada:", err);
+    alert("Erro ao chamar cliente");
   }
-
-  const { barber, index } = req.body;
-
-  if (!state.queues[barber]) {
-    return res.status(400).json({ ok: false, erro: "Fila inexistente" });
-  }
-
-  const cliente = state.queues[barber][index];
-
-  if (!cliente) {
-    return res.status(400).json({ ok: false, erro: "Cliente não encontrado" });
-  }
-
-  state.queues[barber].splice(index, 1);
-  state.stats.atendidos++;
-
-  return res.status(200).json({ ok: true, cliente });
 }
