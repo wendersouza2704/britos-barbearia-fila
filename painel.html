@@ -31,14 +31,16 @@ input,select{padding:8px;border-radius:6px;border:1px solid #222;background:#0b0
 <div class="title">Painel de Controle – Britos Barbearia</div>
 </div>
 
+<!-- LOGIN -->
 <div id="login" class="loginbox">
 <h3>Login</h3>
 <input id="user" placeholder="Usuário">
 <input id="pass" placeholder="Senha" type="password">
 <button id="btnLogin">Entrar</button>
-<div class="small">Usuário padrão: <b>barbeiro</b> / Senha: <b>12345</b></div>
+<div class="small">Usuário: <b>barbeiro</b> • Senha: <b>12345</b></div>
 </div>
 
+<!-- APLICATIVO -->
 <div id="app" style="display:none">
 <div class="topbar">
 <div class="controls">
@@ -54,19 +56,17 @@ Atendidos hoje: <span id="atendidos">0</span> • Na fila: <span id="nofila">0</
 </div>
 
 <div class="main">
-<div class="column" style="flex:1 1 100%">
+<div class="column">
 <h4>Fila — Barbeiro Breno</h4>
 <div id="col-breno"></div>
 </div>
 </div>
 </div>
 
-<audio id="som">
-<source src="" type="audio/wav">
-</audio>
+<audio id="som"><source src=""></audio>
 
 <script>
-// ====== LOGIN ======
+// LOGIN
 document.getElementById('btnLogin').onclick = ()=>{
   const u = document.getElementById('user').value;
   const p = document.getElementById('pass').value;
@@ -77,144 +77,125 @@ document.getElementById('btnLogin').onclick = ()=>{
   } else alert('Credenciais incorretas');
 };
 
-// ====== CARREGAR FILA ======
+// ===== CARREGAR FILA =====
+let filaCache = [];
+
 async function carregar(){
   const r = await fetch('/api/fila');
   const data = await r.json();
   const br = data.queues.breno || [];
 
-  // adiciona flags se não existirem
-  br.forEach(c => {
-    if (c.notificado10 === undefined) c.notificado10 = false;
-    if (c.notificado5 === undefined) c.notificado5 = false;
+  br.forEach(c=>{
+    if(c.notificado10===undefined) c.notificado10 = false;
+    if(c.notificado5===undefined)  c.notificado5 = false;
   });
+
+  filaCache = br;
 
   document.getElementById('col-breno').innerHTML =
     br.map((c,i)=>renderItem(c,'breno',i)).join('');
 
   document.getElementById('atendidos').textContent = data.stats.atendidos || 0;
   document.getElementById('nofila').textContent = br.length;
-
-  filaCache = br; // salva localmente para notificações
 }
 
-// ====== RENDER ITEM ======
-function renderItem(c, barber, i) {
+// ===== ITEM DA FILA =====
+function renderItem(c, barber, i){
   const FIX_MIN = 45;
   const esperaMin = (i + 1) * FIX_MIN;
 
   const previsto = new Date(Date.now() + esperaMin * 60000)
-    .toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      .toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
 
   return `
     <div class="customer">
-      <div><b>${c.nome}</b> <span class="small">(${c.telefone})</span></div>
-
-      <div class="small">Entrou: ${new Date(c.ts).toLocaleTimeString([], {
-        hour:'2-digit', minute:'2-digit'
-      })}</div>
-
+      <b>${c.nome}</b> <span class="small">(${c.telefone})</span>
+      <div class="small">Entrou: ${new Date(c.ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
       <div class="small">Espera: ${esperaMin} min</div>
       <div class="small">Previsto: ${previsto}</div>
 
       <div style="margin-top:8px">
-        <button class="callbtn" onclick="chamar('breno', ${i})">Chamar</button>
-        <button class="removebtn" onclick="remover('breno', ${i})">Remover</button>
+        <button class="callbtn" onclick="chamar('breno',${i})">Chamar</button>
+        <button class="removebtn" onclick="remover('breno',${i})">Remover</button>
       </div>
     </div>
   `;
 }
 
-// ====== FUNÇÃO PARA ENVIAR WHATSAPP ======
-function enviarWhatsApp(tel, msg) {
+// ===== WHATSAPP =====
+function enviarWhatsApp(tel,msg){
   window.open(`https://wa.me/55${tel}?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
-// ====== NOTIFICAÇÃO AUTOMÁTICA 10 E 5 MIN ======
-let filaCache = [];
+// ===== NOTIFICAÇÕES AUTOMÁTICAS 10 E 5 MIN =====
+setInterval(()=>{
+  if(!filaCache.length) return;
 
-setInterval(() => {
-  if (!filaCache.length) return;
-
-  const agora = Date.now();
   const FIX_MIN = 45;
+  const agora = Date.now();
 
-  filaCache.forEach((c, i) => {
-    const esperaMin = (i + 1) * FIX_MIN;
-    const tempoRestante = esperaMin * 60000 - (agora - c.ts);
+  filaCache.forEach((c,i)=>{
+    const esperaMin = (i+1)*FIX_MIN;
+    const tempoRestante = esperaMin*60000 - (agora - c.ts);
 
-    // 10 minutos
-    if (tempoRestante <= 600000 && tempoRestante > 540000 && !c.notificado10) {
+    if(tempoRestante <= 600000 && tempoRestante > 540000 && !c.notificado10){
       c.notificado10 = true;
-      enviarWhatsApp(c.telefone,
-        `Olá ${c.nome}, falta aproximadamente 10 minutos para sua vez na Britos Barbearia!`);
+      enviarWhatsApp(c.telefone, `Olá ${c.nome}, falta cerca de 10 minutos para sua vez!`);
     }
 
-    // 5 minutos
-    if (tempoRestante <= 300000 && tempoRestante > 240000 && !c.notificado5) {
+    if(tempoRestante <= 300000 && tempoRestante > 240000 && !c.notificado5){
       c.notificado5 = true;
-      enviarWhatsApp(c.telefone,
-        `Olá ${c.nome}, está quase na sua vez! Faltam cerca de 5 minutos.`);
+      enviarWhatsApp(c.telefone, `Olá ${c.nome}, faltam aproximadamente 5 minutos para sua vez!`);
     }
   });
-}, 30000); // verifica a cada 30 segundos
+},30000);
 
-// ====== CHAMAR CLIENTE ======
-async function chamar(barber, index) {
+// ===== CHAMAR CLIENTE =====
+async function chamar(barber,index){
   const res = await fetch('/api/call', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    method:'POST',
+    headers:{ 'Content-Type': 'application/json' },
     body: JSON.stringify({ barber, index })
   });
 
   const data = await res.json();
 
-  if (data && data.cliente) {
+  if(data && data.cliente){
     playSound();
-
-    const tel = data.cliente.telefone;
-    const msg = encodeURIComponent(
+    enviarWhatsApp(
+      data.cliente.telefone,
       `Olá ${data.cliente.nome}, sua vez chegou na Britos Barbearia. Pode vir agora!`
     );
-
-    window.open(`https://wa.me/55${tel}?text=${msg}`, '_blank');
-
-    setTimeout(() => carregar(), 500);
+    setTimeout(()=>carregar(),500);
   } else {
     alert('Erro ao chamar cliente');
   }
 }
 
-
-
-// ====== REMOVER ======
+// ===== REMOVER =====
 async function remover(barber,index){
   await fetch(`/api/fila?barber=${barber}&index=${index}`,{method:'DELETE'});
   carregar();
 }
 
-// ====== CHAMAR PRÓXIMO ======
-async function chamarProximo(){
-  await chamar('breno',0);
-}
+// ===== CHAMAR PRÓXIMO =====
+async function chamarProximo(){ await chamar('breno',0); }
 
-// ====== SOM ======
+// ===== SOM =====
 function playSound(){
   try{
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
     const o = ctx.createOscillator();
     const g = ctx.createGain();
-    o.type='sine';
-    o.frequency.value = 880;
+    o.type='sine'; o.frequency.value=880;
     o.connect(g); g.connect(ctx.destination);
     o.start();
-    g.gain.setValueAtTime(0.0001, ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.01);
-    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.8);
-    setTimeout(()=>{ o.stop(); ctx.close(); },900);
+    g.gain.setValueAtTime(0.0001,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.2,ctx.currentTime+0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+0.8);
+    setTimeout(()=>{o.stop();ctx.close();},900);
   }catch(e){}
 }
-
 </script>
 </body>
 </html>
