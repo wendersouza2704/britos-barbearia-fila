@@ -186,6 +186,7 @@ async function chamar(barber, index) {
 }
 
 
+
 // ====== REMOVER ======
 async function remover(barber,index){
   await fetch(`/api/fila?barber=${barber}&index=${index}`,{method:'DELETE'});
