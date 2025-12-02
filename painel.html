@@ -42,10 +42,9 @@ input,select{padding:8px;border-radius:6px;border:1px solid #222;background:#0b0
 <div class="topbar">
 <div class="controls">
 <button onclick="carregar()">Recarregar</button>
-<button onclick="chamarProximo('joao')" class="play">Chamar próximo João</button>
-<button onclick="chamarProximo('marcos')" class="play">Chamar próximo Marcos</button>
+<button onclick="chamarProximo()" class="play">Chamar próximo Breno</button>
 <label class="small">Tempo médio (min)</label>
-<input id="avgGlobal" type="number" value="15" style="width:80px">
+<input id="avgGlobal" type="number" value="45" style="width:80px">
 </div>
 <div style="margin-left:auto" class="stats">
 Atendidos hoje: <span id="atendidos">0</span> • Na fila: <span id="nofila">0</span>
@@ -53,17 +52,9 @@ Atendidos hoje: <span id="atendidos">0</span> • Na fila: <span id="nofila">0</
 </div>
 
 <div class="main">
-<div class="column">
-<h4>Fila — Barbeiro João</h4>
-<div id="col-joao"></div>
-</div>
-<div class="column">
-<h4>Fila — Barbeiro Marcos</h4>
-<div id="col-marcos"></div>
-</div>
-<div class="column">
-<h4>Fila — Qualquer</h4>
-<div id="col-qualquer"></div>
+<div class="column" style="flex:1 1 100%">
+<h4>Fila — Barbeiro Breno</h4>
+<div id="col-breno"></div>
 </div>
 </div>
 </div>
@@ -88,14 +79,10 @@ document.getElementById('btnLogin').onclick = ()=>{
 async function carregar(){
   const r = await fetch('/api/fila');
   const data = await r.json();
-  const jo = data.queues.joao || [];
-  const ma = data.queues.marcos || [];
-  const qu = data.queues.qualquer || [];
-  document.getElementById('col-joao').innerHTML = jo.map((c,i)=>renderItem(c,'joao',i)).join('');
-  document.getElementById('col-marcos').innerHTML = ma.map((c,i)=>renderItem(c,'marcos',i)).join('');
-  document.getElementById('col-qualquer').innerHTML = qu.map((c,i)=>renderItem(c,'qualquer',i)).join('');
+  const br = data.queues.breno || [];
+  document.getElementById('col-breno').innerHTML = br.map((c,i)=>renderItem(c,'breno',i)).join('');
   document.getElementById('atendidos').textContent = data.stats.atendidos || 0;
-  document.getElementById('nofila').textContent = jo.length + ma.length + qu.length;
+  document.getElementById('nofila').textContent = br.length;
 }
 
 function renderItem(c,barber,i){
@@ -110,19 +97,15 @@ function renderItem(c,barber,i){
 }
 
 async function chamar(barber,index){
-  // call API to increment atendidos and remove
-  const avgLocal = parseInt(document.getElementById('avgGlobal').value) || 15;
+  const avgLocal = parseInt(document.getElementById('avgGlobal').value) || 45;
   const res = await fetch('/api/call', {
     method:'POST', headers:{'content-type':'application/json'},
     body: JSON.stringify({barber,index,avg:avgLocal})
   });
   const data = await res.json();
   if(data && data.cliente){
-    // play sound
     playSound();
-    // open whatsapp
     const tel = data.cliente.telefone;
-    const nome = encodeURIComponent(data.cliente.nome);
     const msg = encodeURIComponent(`Olá ${data.cliente.nome}, sua vez está chegando na Britos Barbearia. Venha agora, por favor.`);
     window.open(`https://wa.me/55${tel}?text=${msg}`,'_blank');
     setTimeout(()=>carregar(),500);
@@ -136,9 +119,8 @@ async function remover(barber,index){
   carregar();
 }
 
-async function chamarProximo(barber){
-  // call index 0
-  await chamar(barber,0);
+async function chamarProximo(){
+  await chamar('breno',0);
 }
 
 // simple tone using WebAudio
